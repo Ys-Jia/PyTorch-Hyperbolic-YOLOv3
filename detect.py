@@ -169,7 +169,7 @@ def _draw_and_save_output_image(image_path, detections, img_size, output_path, c
 
     :param image_path: Path to input image
     :type image_path: str
-    :param detections: List of detections on image
+    :param detections: tensor of detections on image (n, 85), n is the number of bounding boxes
     :type detections: [Tensor]
     :param img_size: Size of each image dimension for yolo
     :type img_size: int
@@ -221,6 +221,65 @@ def _draw_and_save_output_image(image_path, detections, img_size, output_path, c
     plt.savefig(output_path, bbox_inches="tight", pad_inches=0.0)
     plt.close()
 
+def _draw_and_save_output_image_online(image, detections, img_size, output_path, classes, conf_thres=0.5, nms_thres=0.5):
+    """Draws detections in output image and stores this.
+
+    :param image_path: Path to input image
+    :type image_path: str
+    :param detections: List of detections on image
+    :type detections: [Tensor]
+    :param img_size: Size of each image dimension for yolo
+    :type img_size: int
+    :param output_path: Path of output directory
+    :type output_path: str
+    :param classes: List of class names
+    :type classes: [str]
+    """
+    # Create plot
+    if image.shape[0] == 3: image = image.permute(1, 2, 0)
+    img = image.cpu().numpy()
+    plt.figure()
+    fig, ax = plt.subplots(1)
+    ax.imshow(img)
+
+    # Manipulate the raw predictions to the (n, 6) shape tensors
+    detections = non_max_suppression(detections, conf_thres=conf_thres, iou_thres=nms_thres)
+    # Rescale boxes to original image
+    detections = rescale_boxes(detections[0], img_size, img.shape[:2])
+    unique_labels = detections[:, -1].cpu().unique()
+    n_cls_preds = len(unique_labels)
+    # Bounding-box colors
+    cmap = plt.get_cmap("tab20b")
+    colors = [cmap(i) for i in np.linspace(0, 1, n_cls_preds)]
+    bbox_colors = random.sample(colors, n_cls_preds)
+    for x1, y1, x2, y2, conf, cls_pred in detections:
+
+        # print(f"\t+ Label: {classes[int(cls_pred)]} | Confidence: {conf.item():0.4f}")
+
+        box_w = x2 - x1
+        box_h = y2 - y1
+
+        color = bbox_colors[int(np.where(unique_labels == int(cls_pred))[0])]
+        # Create a Rectangle patch
+        bbox = patches.Rectangle((x1, y1), box_w, box_h, linewidth=2, edgecolor=color, facecolor="none")
+        # Add the bbox to the plot
+        ax.add_patch(bbox)
+        # Add label
+        plt.text(
+            x1,
+            y1,
+            s=f"{classes[int(cls_pred)]}-{conf.item():0.3f}",
+            color="white",
+            verticalalignment="top",
+            bbox={"color": color, "pad": 0})
+
+    # Save generated image with detections
+    plt.axis("off")
+    plt.gca().xaxis.set_major_locator(NullLocator())
+    plt.gca().yaxis.set_major_locator(NullLocator())
+    plt.savefig(output_path, bbox_inches="tight", pad_inches=0.0)
+    plt.close()
+
 
 def _create_data_loader(img_path, batch_size, img_size, n_cpu):
     """Creates a DataLoader for inferencing.
@@ -252,7 +311,7 @@ def run():
     print_environment_info()
     parser = argparse.ArgumentParser(description="Detect objects on images.")
     parser.add_argument("-m", "--model", type=str, default="config/yolov3.cfg", help="Path to model definition file (.cfg)")
-    parser.add_argument("-w", "--weights", type=str, default="weights/yolov3.weights", help="Path to weights or checkpoint file (.weights or .pth)")
+    parser.add_argument("-w", "--weights", type=str, default="checkpoints/yolov3_ckpt_59.pth", help="Path to weights or checkpoint file (.weights or .pth)")
     parser.add_argument("-i", "--images", type=str, default="data/samples", help="Path to directory with images to inference")
     parser.add_argument("-c", "--classes", type=str, default="data/coco.names", help="Path to classes label file (.names)")
     parser.add_argument("-o", "--output", type=str, default="output", help="Path to output directory")
