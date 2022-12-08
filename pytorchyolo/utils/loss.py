@@ -104,6 +104,11 @@ def compute_loss(predictions, targets, model):
             # Classification of the class
             # Check if we need to do a classification (number of classes > 1)
             if ps.size(1) - 5 > 1:
+                # t = torch.zeros_like(ps[:, 5:], device=device)  # Old BCELoss
+                # t[range(num_targets), tcls[layer_index]] = 1
+                # # Use the tensor to calculate the BCE loss
+                # lcls += BCEcls(ps[:, 5:], t)  # BCE
+
                 # Use the tensor to calculate the NLL loss
                 t = torch.zeros_like(ps[:, 5], device=device).long() # assign the target vector
                 t[range(num_targets)] = tcls[layer_index]
