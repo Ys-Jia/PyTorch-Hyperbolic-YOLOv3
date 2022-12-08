@@ -174,7 +174,7 @@ else:
     print("Unknown optimizer. Please choose between (adam, sgd).")
 
 ### Overfitting Test ###
-overfitting_iterations = 100; sample_index = 2
+overfitting_iterations = 1000; sample_index = 2
 if args.overfitting:
     print("\n---- Overfitting Test ----")
     iter_dataloader = iter(dataloader)
