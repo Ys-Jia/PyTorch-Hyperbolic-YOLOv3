@@ -30,7 +30,7 @@ from terminaltables import AsciiTable
 from torchsummary import summary
 
 
-def _create_data_loader(img_path, batch_size, img_size, n_cpu, multiscale_training=False):
+def _create_data_loader(img_path, batch_size, img_size, n_cpu, multiscale_training=False, overfitting=False):
     """Creates a DataLoader for training.
 
     :param img_path: Path to file containing all paths to training images.
@@ -54,7 +54,7 @@ def _create_data_loader(img_path, batch_size, img_size, n_cpu, multiscale_traini
     dataloader = DataLoader(
         dataset,
         batch_size=batch_size,
-        shuffle=True,
+        shuffle=not overfitting,
         num_workers=n_cpu,
         pin_memory=True,
         collate_fn=dataset.collate_fn,
@@ -88,15 +88,6 @@ print(f"Command line arguments: {args}")
 if args.seed != -1:
     provide_determinism(args.seed)
 
-logger = Logger(args.logdir)  # Tensorboard logger
-wandb_config = dict(
-    Name="COMS6998-Representation Learning",
-    algorithm=f"{'-'.join(str(datetime.datetime.now())[5:16].split())}-Yolo-v3-hyperbolic-{args.hyperbolic}",
-)
-if args.collect_data:
-    wandb.init(project=wandb_config['Name'], entity='jiayinsen', config=wandb_config, name=wandb_config['algorithm'])
-else: wandb.init(mode="disabled")
-
 # Create output directories if missing
 os.makedirs("output", exist_ok=True)
 os.makedirs("checkpoints", exist_ok=True)
@@ -119,7 +110,22 @@ if args.verbose:
     summary(model, input_size=(3, model.hyperparams['height'], model.hyperparams['height']))
 
 mini_batch_size = model.hyperparams['batch'] // model.hyperparams['subdivisions'] if not args.overfitting else 1
-if args.overfitting: args.epochs = 10
+if args.overfitting: 
+    args.epochs = 10
+    model.hyperparams["decay"] = 0
+
+##################
+# Initialize wandb
+##################
+wandb_config = dict(
+    Name="COMS6998-Representation Learning",
+    algorithm=f"{'-'.join(str(datetime.datetime.now())[5:16].split())}-Yolo-v3-hyperbolic-{args.hyperbolic}",
+    overfitting=args.overfitting,
+    **model.hyperparams,
+)
+if args.collect_data:
+    wandb.init(project=wandb_config['Name'], entity='jiayinsen', config=wandb_config, name=wandb_config['algorithm'])
+else: wandb.init(mode="disabled")
 
 # #################
 # Create Dataloader
@@ -131,7 +137,8 @@ dataloader = _create_data_loader(
     mini_batch_size,
     model.hyperparams['height'],
     args.n_cpu,
-    args.multiscale_training)
+    args.multiscale_training,
+    overfitting=args.overfitting)
 
 # Load validation dataloader
 validation_dataloader = _create_validation_data_loader(
@@ -162,7 +169,7 @@ else:
     print("Unknown optimizer. Please choose between (adam, sgd).")
 
 ### Overfitting Test ###
-overfitting_iterations = 1000; sample_index = 2
+overfitting_iterations = 1000; sample_index = 10
 if args.overfitting:
     print("\n---- Overfitting Test ----")
     iter_dataloader = iter(dataloader)
