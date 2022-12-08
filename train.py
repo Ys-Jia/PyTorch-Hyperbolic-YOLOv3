@@ -80,16 +80,18 @@ parser.add_argument("--nms_thres", type=float, default=0.5, help="Evaluation: IO
 parser.add_argument("--logdir", type=str, default="logs", help="Directory for training log files (e.g. for TensorBoard)")
 parser.add_argument("--seed", type=int, default=-1, help="Makes results reproducable. Set -1 to disable.")
 parser.add_argument("--overfitting", action="store_true", help="Overfitting test")
+parser.add_argument("--outputdir", type=str, default="output", help="Directory for training image files (e.g. for overfitting)")
 parser.add_argument("--collect_data", type=lambda x: bool(strtobool(x)), default=False, nargs='?', const=True)
 parser.add_argument("--hyperbolic", type=lambda x: bool(strtobool(x)), default=False, nargs='?', const=True)
 args = parser.parse_args()
+args.global_time = '-'.join(str(datetime.datetime.now())[5:16].split())
 print(f"Command line arguments: {args}")
 
 if args.seed != -1:
     provide_determinism(args.seed)
 
 # Create output directories if missing
-os.makedirs("output", exist_ok=True)
+os.makedirs(args.outputdir, exist_ok=True)
 os.makedirs("checkpoints", exist_ok=True)
 
 # Get data configuration
@@ -113,13 +115,16 @@ mini_batch_size = model.hyperparams['batch'] // model.hyperparams['subdivisions'
 if args.overfitting: 
     args.epochs = 10
     model.hyperparams["decay"] = 0
+    overfitting_test_img_path = os.path.join(args.outputdir, args.global_time)
+    os.makedirs(overfitting_test_img_path, exist_ok=True)
+
 
 ##################
 # Initialize wandb
 ##################
 wandb_config = dict(
     Name="COMS6998-Representation Learning",
-    algorithm=f"{'-'.join(str(datetime.datetime.now())[5:16].split())}-Yolo-v3-hyperbolic-{args.hyperbolic}",
+    algorithm=f"{args.global_time}-Yolo-v3-hyperbolic-{args.hyperbolic}",
     overfitting=args.overfitting,
     **model.hyperparams,
 )
@@ -169,7 +174,7 @@ else:
     print("Unknown optimizer. Please choose between (adam, sgd).")
 
 ### Overfitting Test ###
-overfitting_iterations = 1000; sample_index = 10
+overfitting_iterations = 100; sample_index = 2
 if args.overfitting:
     print("\n---- Overfitting Test ----")
     iter_dataloader = iter(dataloader)
@@ -184,7 +189,7 @@ if args.overfitting:
         with torch.no_grad():
             outputs = model(imgs)
             _draw_and_save_output_image_online(imgs.squeeze(0), outputs, img_size=imgs.shape[-1], 
-                                                output_path=f"output/overfitting{epoch}.jpg", classes=class_names)
+                                                output_path=f"{overfitting_test_img_path}/overfitting{epoch}.jpg", classes=class_names)
         model.train()
         for batch_i, _ in enumerate(tqdm.tqdm(range(overfitting_iterations), desc=f"Overfitting Epoch: {epoch}")):
             batches_done = overfitting_iterations * epoch + batch_i

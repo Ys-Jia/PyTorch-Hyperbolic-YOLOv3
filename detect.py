@@ -246,6 +246,7 @@ def _draw_and_save_output_image_online(image, detections, img_size, output_path,
     detections = non_max_suppression(detections, conf_thres=conf_thres, iou_thres=nms_thres)
     # Rescale boxes to original image
     detections = rescale_boxes(detections[0], img_size, img.shape[:2])
+    print(f"Number of Detections:", {detections.shape})
     unique_labels = detections[:, -1].cpu().unique()
     n_cls_preds = len(unique_labels)
     # Bounding-box colors

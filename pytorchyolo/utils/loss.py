@@ -63,12 +63,11 @@ def compute_loss(predictions, targets, model):
     lcls, lbox, lobj = torch.zeros(1, device=device), torch.zeros(1, device=device), torch.zeros(1, device=device)
 
     # Build yolo targets
-    tcls, tbox, indices, anchors = build_targets(predictions, targets, model)  # targets
+    tcls, tbox, indices, anchors = build_targets(predictions, targets, model)  # Compute the needed targets bounding boxes for loss computation
 
-    # Define different loss functions classification
-    BCEcls = nn.BCEWithLogitsLoss(
-        pos_weight=torch.tensor([1.0], device=device))
-    BCEobj = nn.BCEWithLogitsLoss(
+    # Define different loss functions classification; We change to hyperbolic here!
+    NLLcls = nn.NLLLoss()
+    BCEobj = nn.BCEWithLogitsLoss( # object should also be hyperbolic loss
         pos_weight=torch.tensor([1.0], device=device))
 
     # Calculate losses for each yolo layer
@@ -105,11 +104,11 @@ def compute_loss(predictions, targets, model):
             # Classification of the class
             # Check if we need to do a classification (number of classes > 1)
             if ps.size(1) - 5 > 1:
-                # Hot one class encoding
-                t = torch.zeros_like(ps[:, 5:], device=device)  # targets
-                t[range(num_targets), tcls[layer_index]] = 1
-                # Use the tensor to calculate the BCE loss
-                lcls += BCEcls(ps[:, 5:], t)  # BCE
+                # Use the tensor to calculate the NLL loss
+                t = torch.zeros_like(ps[:, 5], device=device).long() # assign the target vector
+                t[range(num_targets)] = tcls[layer_index]
+                # NLLLoss only support 1D
+                lcls += NLLcls(ps[:, 5:], t)  # NLL
 
         # Classification of the objectness the sequel
         # Calculate the BCE loss between the on the fly generated target and the network prediction
@@ -127,7 +126,7 @@ def compute_loss(predictions, targets, model):
 
 def build_targets(p, targets, model):
     # Build targets for compute_loss(), input targets(image,class,x,y,w,h)
-    na, nt = 3, targets.shape[0]  # number of anchors, targets #TODO
+    na, nt = 3, targets.shape[0]  # number of anchors, targets 
     tcls, tbox, indices, anch = [], [], [], []
     gain = torch.ones(7, device=targets.device)  # normalized to gridspace gain
     # Make a tensor that iterates 0-2 for 3 anchors and repeat that as many times as we have target boxes

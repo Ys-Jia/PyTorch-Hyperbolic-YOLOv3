@@ -120,6 +120,7 @@ class ToPoincare(nn.Module):
     """
 
     def __init__(self, c, train_c=False, train_x=False, ball_dim=None, riemannian=True):
+        # train_c: train the curventure / train_x: train the poincare origin point
         super(ToPoincare, self).__init__()
         if train_x:
             if ball_dim is None:

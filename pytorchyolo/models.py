@@ -9,6 +9,7 @@ import numpy as np
 
 from pytorchyolo.utils.parse_config import parse_model_config
 from pytorchyolo.utils.utils import weights_init_normal
+import hyptorch.nn as hypnn
 
 
 def create_modules(module_defs):
@@ -124,16 +125,22 @@ class Mish(nn.Module):
         return x * torch.tanh(F.softplus(x))
 
 class YOLOLayer(nn.Module):
-    """Detection layer"""
+    """Detection layer, it has 3 different scales! So 3 yolo layers https://towardsdatascience.com/digging-deep-into-yolo-v3-a-hands-on-guide-part-1-78681f2c7e29"""
 
-    def __init__(self, anchors, num_classes):
+    def __init__(self, anchors, num_classes, curvature=1):
         super(YOLOLayer, self).__init__()
         self.num_anchors = len(anchors)
         self.num_classes = num_classes
         self.mse_loss = nn.MSELoss()
         self.bce_loss = nn.BCELoss()
-        self.no = num_classes + 5  # number of outputs per anchor
+        self.no = num_classes + 5  # number of outputs per anchor, (pc, bx, by, bh, bw); pc is the confidence of object/background
+        self.num_out_no_position = self.no - 5 # -(bx, by, bh, bw)
+        self.hyp_linear_outnum = 128
         self.grid = torch.zeros(1)  # TODO
+        self.tp = hypnn.ToPoincare(c=curvature, ball_dim=self.num_out_no_position)
+        self.fp = hypnn.FromPoincare(c=curvature, ball_dim=self.num_out_no_position)
+        self.hyp_linear = hypnn.HypLinear(in_features=self.num_out_no_position, out_features=self.hyp_linear_outnum, c=curvature)
+        self.mlr = hypnn.HyperbolicMLR(ball_dim=self.hyp_linear_outnum, n_classes=num_classes, c=curvature) # ball_dim == in_features; Only class value can use MLR to compute!
 
         anchors = torch.tensor(list(chain(*anchors))).float().view(-1, 2)
         self.register_buffer('anchors', anchors)
@@ -146,14 +153,23 @@ class YOLOLayer(nn.Module):
         self.stride = stride
         bs, _, ny, nx = x.shape  # x(bs,255,20,20) to x(bs,3,20,20,85)
         x = x.view(bs, self.num_anchors, self.no, ny, nx).permute(0, 1, 3, 4, 2).contiguous()
+        # Poincare optimization
+        classification_part = x[..., 5:].clone()
+        original_shape = classification_part.shape
+        classification_part = classification_part.view(-1, self.num_classes)
+        classification_part = self.tp(classification_part) # poincare features
+        classification_part = self.hyp_linear(classification_part)
+        x[..., 5:] = F.log_softmax(self.mlr(classification_part, c=self.tp.c).view(*original_shape), dim=-1)
 
-        if not self.training:  # inference
+        if not self.training:  # inference??
             if self.grid.shape[2:4] != x.shape[2:4]:
                 self.grid = self._make_grid(nx, ny).to(x.device)
 
             x[..., 0:2] = (x[..., 0:2].sigmoid() + self.grid) * stride  # xy
             x[..., 2:4] = torch.exp(x[..., 2:4]) * self.anchor_grid # wh
-            x[..., 4:] = x[..., 4:].sigmoid()
+            # Poincare inference
+            x[..., 4] = x[..., 4].sigmoid()
+            x[..., 5:] = x[..., 5:].exp() # one poincare multiclass logistic regression, but we need single logistic regression for yolov3
             x = x.view(bs, -1, self.no)
 
         return x
@@ -182,19 +198,19 @@ class Darknet(nn.Module):
         for i, (module_def, module) in enumerate(zip(self.module_defs, self.module_list)):
             if module_def["type"] in ["convolutional", "upsample", "maxpool"]:
                 x = module(x)
-            elif module_def["type"] == "route":
+            elif module_def["type"] == "route": # skip combine
                 combined_outputs = torch.cat([layer_outputs[int(layer_i)] for layer_i in module_def["layers"].split(",")], 1)
                 group_size = combined_outputs.shape[1] // int(module_def.get("groups", 1))
                 group_id = int(module_def.get("group_id", 0))
                 x = combined_outputs[:, group_size * group_id : group_size * (group_id + 1)] # Slice groupings used by yolo v4
-            elif module_def["type"] == "shortcut":
+            elif module_def["type"] == "shortcut": # residual connection
                 layer_i = int(module_def["from"])
                 x = layer_outputs[-1] + layer_outputs[layer_i]
             elif module_def["type"] == "yolo":
                 x = module[0](x, img_size)
                 yolo_outputs.append(x)
             layer_outputs.append(x)
-        return yolo_outputs if self.training else torch.cat(yolo_outputs, 1)
+        return yolo_outputs if self.training else torch.cat(yolo_outputs, 1) # reason why eval() affect the final output
 
     def load_darknet_weights(self, weights_path):
         """Parses and loads the weights stored in 'weights_path'"""
