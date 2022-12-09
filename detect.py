@@ -327,6 +327,9 @@ def run():
     # Extract class names from file
     classes = load_classes(args.classes)  # List of class names
 
+    args.images = "data/crowdhuman-416x416/images_test"
+    args.output = "output/test"
+
     detect_directory(
         args.model,
         args.weights,

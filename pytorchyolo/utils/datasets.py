@@ -32,7 +32,7 @@ def resize(image, size):
 
 class ImageFolder(Dataset):
     def __init__(self, folder_path, transform=None):
-        self.files = sorted(glob.glob("%s/*.*" % folder_path))
+        self.files = sorted(glob.glob("%s/*.*" % folder_path))[:100]
         self.transform = transform
 
     def __getitem__(self, index):

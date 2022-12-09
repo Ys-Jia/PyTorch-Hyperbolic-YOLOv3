@@ -5,7 +5,8 @@ build
 *.egg-info
 dist
 output/
-data/*
+data/crowdhuman-416x416
+data/raw
 backup
 weights/*.weights
 weights/*.conv.*
