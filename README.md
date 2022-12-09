@@ -1,22 +1,16 @@
-# PyTorch-YOLOv3
-A minimal PyTorch implementation of YOLOv3, with support for training, inference and evaluation.
+# PyTorch-Hyperbolic-YOLOv3
+A minimal PyTorch implementation of YOLOv3 with hyperbolic embeddings, with support for training, inference and evaluation.Please see our slides for details about motivation and results: [Hyperbolic Object Detection](https://docs.google.com/presentation/d/129tEFTov2br3vmXDUdejqX65RqBlukDQJMmQ1tDJJSo/edit#slide=id.g1b03aa4f96f_0_0)
 
-[![CI](https://github.com/eriklindernoren/PyTorch-YOLOv3/actions/workflows/main.yml/badge.svg)](https://github.com/eriklindernoren/PyTorch-YOLOv3/actions/workflows/main.yml) [![PyPI pyversions](https://img.shields.io/pypi/pyversions/pytorchyolo.svg)](https://pypi.python.org/pypi/pytorchyolo/) [![PyPI license](https://img.shields.io/pypi/l/pytorchyolo.svg)](LICENSE)
+[![PyPI pyversions](https://img.shields.io/pypi/pyversions/pytorchyolo.svg)](https://pypi.python.org/pypi/pytorchyolo/) [![PyPI license](https://img.shields.io/pypi/l/pytorchyolo.svg)](LICENSE)
+
+
 
 ## Installation
-### Installing from source
-
-For normal training and evaluation we recommend installing the package from source using a poetry virtual environment.
 
 ```bash
-git clone https://github.com/eriklindernoren/PyTorch-YOLOv3
+git clone https://github.com/ys-jia/PyTorch-YOLOv3
 cd PyTorch-YOLOv3/
-pip3 install poetry --user
-poetry install
 ```
-
-You need to join the virtual environment by running `poetry shell` in this directory before running any of the following commands without the `poetry run` prefix.
-Also have a look at the other installing method, if you want to use the commands everywhere without opening a poetry-shell.
 
 #### Download pretrained weights
 
@@ -30,45 +24,15 @@ Also have a look at the other installing method, if you want to use the commands
 ./data/get_coco_dataset.sh
 ```
 
-### Install via pip
-
-This installation method is recommended, if you want to use this package as a dependency in another python project.
-This method only includes the code, is less isolated and may conflict with other packages.
-Weights and the COCO dataset need to be downloaded as stated above.
-See __API__ for further information regarding the packages API.
-It also enables the CLI tools `yolo-detect`, `yolo-train`, and `yolo-test` everywhere without any additional commands.
-
+#### Download CrowdHuman ####
 ```bash
-pip3 install pytorchyolo --user
+./data/get_crowdhuman_dataset.sh
 ```
 
-## Test
-Evaluates the model on COCO test dataset.
-To download this dataset as well as weights, see above.
-
-```bash
-poetry run yolo-test --weights weights/yolov3.weights
+#### Detect ####
+detect.py will generate all detections and draw boxes for a whole folder
 ```
-
-| Model                   | mAP (min. 50 IoU) |
-| ----------------------- |:-----------------:|
-| YOLOv3 608 (paper)      | 57.9              |
-| YOLOv3 608 (this impl.) | 57.3              |
-| YOLOv3 416 (paper)      | 55.3              |
-| YOLOv3 416 (this impl.) | 55.5              |
-
-## Inference
-Uses pretrained weights to make predictions on images. Below table displays the inference times when using as inputs images scaled to 256x256. The ResNet backbone measurements are taken from the YOLOv3 paper. The Darknet-53 measurement marked shows the inference time of this implementation on my 1080ti card.
-
-| Backbone                | GPU      | FPS      |
-| ----------------------- |:--------:|:--------:|
-| ResNet-101              | Titan X  | 53       |
-| ResNet-152              | Titan X  | 37       |
-| Darknet-53 (paper)      | Titan X  | 76       |
-| Darknet-53 (this impl.) | 1080ti   | 74       |
-
-```bash
-poetry run yolo-detect --images data/samples/
+python detect.py --images "image path"
 ```
 
 <p align="center"><img src="https://github.com/eriklindernoren/PyTorch-YOLOv3/raw/master/assets/giraffe.png" width="480"\></p>
@@ -77,33 +41,24 @@ poetry run yolo-detect --images data/samples/
 <p align="center"><img src="https://github.com/eriklindernoren/PyTorch-YOLOv3/raw/master/assets/messi.png" width="480"\></p>
 
 ## Train
-For argument descriptions have a look at `poetry run yolo-train --help`
+Training process if fully implemented in train.py.
+```
+python train.py --model xxx --data xxx
+```
+Please specify the model config, dataset path you want to use
 
 #### Example (COCO)
 To train on COCO using a Darknet-53 backend pretrained on ImageNet run: 
 
 ```bash
-poetry run yolo-train --data config/coco.data  --pretrained_weights weights/darknet53.conv.74
+python train.py --data config/coco.data  --pretrained_weights weights/darknet53.conv.74
 ```
-
-#### Tensorboard
-Track training progress in Tensorboard:
-* Initialize training
-* Run the command below
-* Go to http://localhost:6006/
-
-```bash
-poetry run tensorboard --logdir='logs' --port=6006
-```
-
-Storing the logs on a slow drive possibly leads to a significant training speed decrease.
-
-You can adjust the log directory using `--logdir <path>` when running `tensorboard` and `yolo-train`.
 
 ## Train on Custom Dataset
 
-#### Custom model
-Run the commands below to create a custom model definition, replacing `<num-classes>` with the number of classes in your dataset.
+#### Custom yolov3 model
+Run the commands below to create a custom yolov3 model definition, replacing `<num-classes>` with the number of classes in your dataset.
+Hyperbolic detector would not be affected by yolov3 config.
 
 ```bash
 ./config/create_custom_model.sh <num-classes>  # Will create custom model 'yolov3-custom.cfg'
@@ -125,7 +80,7 @@ In `data/custom/train.txt` and `data/custom/valid.txt`, add paths to images that
 To train on the custom dataset run:
 
 ```bash
-poetry run yolo-train --model config/yolov3-custom.cfg --data config/custom.data
+python train.py --model config/yolov3-custom.cfg --data config/custom.data
 ```
 
 Add `--pretrained_weights weights/darknet53.conv.74` to train using a backend pretrained on ImageNet.
@@ -190,6 +145,29 @@ https://pjreddie.com/yolo/.
   year={2018}
 }
 ```
+
+### Hyperbolic Image Embeddings
+_Joseph Redmon, Ali Farhadi_ <br>
+
+**Abstract** <br>
+Computer vision tasks such as image classification, image retrieval and few-shot learning are currently dominated by Euclidean and spherical embeddings, so that the final decisions about class belongings or the degree of similarity are made using linear hyperplanes, Euclidean distances, or spherical geodesic distances (cosine similarity). In this work, we demonstrate that in many practical scenarios hyperbolic embeddings provide a better alternative.
+
+[[Paper]](https://arxiv.org/abs/1904.02239)[[Authors' Implementation]](https://github.com/leymir/hyperbolic-image-embeddings)
+
+```
+@article{Hyperbolic Image Embeddings,
+  author    = {Valentin Khrulkov and
+               Leyla Mirvakhabova and
+               Evgeniya Ustinova and
+               Ivan V. Oseledets and
+               Victor S. Lempitsky},
+  title     = {Hyperbolic Image Embeddings},
+  year      = {2019},
+  url       = {http://arxiv.org/abs/1904.02239},
+  eprinttype = {arXiv},
+}
+```
+
 
 ## Other
 
