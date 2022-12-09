@@ -8,8 +8,8 @@ A minimal PyTorch implementation of YOLOv3 with hyperbolic embeddings, with supp
 ## Installation
 
 ```bash
-git clone https://github.com/ys-jia/PyTorch-YOLOv3
-cd PyTorch-YOLOv3/
+git clone https://github.com/Ys-Jia/PyTorch-Hyperbolic-YOLOv3.git
+cd PyTorch-Hyperbolic-YOLOv3/
 ```
 
 #### Download pretrained weights
