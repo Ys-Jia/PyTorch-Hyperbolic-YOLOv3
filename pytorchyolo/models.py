@@ -164,7 +164,7 @@ class YOLOLayer(nn.Module):
         if not self.training:  # inference??
             if self.grid.shape[2:4] != x.shape[2:4]:
                 self.grid = self._make_grid(nx, ny).to(x.device)
-
+            
             x[..., 0:2] = (x[..., 0:2].sigmoid() + self.grid) * stride  # xy
             x[..., 2:4] = torch.exp(x[..., 2:4]) * self.anchor_grid # wh
             # Poincare inference
