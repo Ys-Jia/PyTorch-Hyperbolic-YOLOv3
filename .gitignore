@@ -16,3 +16,4 @@ wandb/
 logs/
 
 .python-version
+fake_test.py
