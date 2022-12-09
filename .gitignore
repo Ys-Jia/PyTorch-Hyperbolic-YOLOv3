@@ -12,6 +12,7 @@ weights/*.weights
 weights/*.conv.*
 __pycache__
 checkpoints/
+baseline_checkpoints/
 wandb/
 .vscode/
 logs/
