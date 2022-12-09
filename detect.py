@@ -318,7 +318,7 @@ def run():
     parser.add_argument("-i", "--images", type=str, default="data/crowdhuman-416x416/images_test", help="Path to directory with images to inference")
     parser.add_argument("-c", "--classes", type=str, default="data/crowdhuman.names", help="Path to classes label file (.names)")
     # parser.add_argument("-o", "--output", type=str, default="output", help="Path to output directory")
-    parser.add_argument("-o", "--output", type=str, default="output", help="Path to output directory")
+    parser.add_argument("-o", "--output", type=str, default="output/test", help="Path to output directory")
     parser.add_argument("-b", "--batch_size", type=int, default=1, help="Size of each image batch")
     parser.add_argument("--img_size", type=int, default=416, help="Size of each image dimension for yolo")
     parser.add_argument("--n_cpu", type=int, default=min(mtp.cpu_count(), 8), help="Number of cpu threads to use during batch generation")
