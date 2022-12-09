@@ -311,7 +311,7 @@ def run():
     print_environment_info()
     parser = argparse.ArgumentParser(description="Detect objects on images.")
     parser.add_argument("-m", "--model", type=str, default="config/yolov3.cfg", help="Path to model definition file (.cfg)")
-    parser.add_argument("-w", "--weights", type=str, default="checkpoints/yolov3_ckpt_49.pth", help="Path to weights or checkpoint file (.weights or .pth)")
+    parser.add_argument("-w", "--weights", type=str, default="checkpoints/yolov3_ckpt_51.pth", help="Path to weights or checkpoint file (.weights or .pth)")
     parser.add_argument("-i", "--images", type=str, default="data/crowdhuman-416x416/images", help="Path to directory with images to inference")
     parser.add_argument("-c", "--classes", type=str, default="data/crowdhuman.names", help="Path to classes label file (.names)")
     parser.add_argument("-o", "--output", type=str, default="output", help="Path to output directory")
