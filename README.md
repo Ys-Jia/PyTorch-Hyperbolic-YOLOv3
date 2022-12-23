@@ -1,5 +1,5 @@
 # PyTorch-Hyperbolic-YOLOv3
-A minimal PyTorch implementation of YOLOv3 with hyperbolic embeddings, with support for training, inference and evaluation.Please see our slides for details about motivation and results: [Hyperbolic Object Detection](https://docs.google.com/presentation/d/129tEFTov2br3vmXDUdejqX65RqBlukDQJMmQ1tDJJSo/edit#slide=id.g1b03aa4f96f_0_0)
+A minimal PyTorch implementation of YOLOv3 with hyperbolic embeddings, with support for training, inference and evaluation.Please see our slides for details about motivation and results: [Hyperbolic Object Detection](https://docs.google.com/presentation/d/129tEFTov2br3vmXDUdejqX65RqBlukDQJMmQ1tDJJSo/edit#slide=id.g1b03aa4f96f_0_0). We have two branches: branch master (original YOLOv3 that is the baseline) and branch hyperbolic_version (YOLOv3 with hyperbolic mapping and loss function).
 
 [![PyPI pyversions](https://img.shields.io/pypi/pyversions/pytorchyolo.svg)](https://pypi.python.org/pypi/pytorchyolo/) [![PyPI license](https://img.shields.io/pypi/l/pytorchyolo.svg)](LICENSE)
 
